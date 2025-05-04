@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendPulse - Data Insights Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4361ee',
+                        secondary: '#3f72af'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        'DEFAULT': '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        input[type="search"]::-webkit-search-decoration,
+        input[type="search"]::-webkit-search-cancel-button,
+        input[type="search"]::-webkit-search-results-button,
+        input[type="search"]::-webkit-search-results-decoration {
+            display: none;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e2e8f0;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4361ee;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        .custom-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+        }
+        .custom-checkbox:checked {
+            background-color: #4361ee;
+            border-color: #4361ee;
+        }
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .custom-radio {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+        }
+        .custom-radio:checked {
+            border-color: #4361ee;
+        }
+        .custom-radio:checked::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4361ee;
+        }
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4361ee;
+            cursor: pointer;
+        }
+        .range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4361ee;
+            cursor: pointer;
+            border: none;
+        }
+        .card-image {
+            width: 100%;
+            height: 160px; /* Fixed height for consistency */
+            object-fit: cover;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-['Pacifico'] text-primary mr-8">TP</h1>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#" class="text-gray-900 font-medium">Dashboard</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-900">Topics</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-900">Analytics</a>
+                    <a href="#" class="text-gray-500 hover:text-gray-900">Reports</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-500 mr-2">Light</span>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-500 ml-2">Dark</span>
+                </div>
+                <div class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full">
+                    <i class="ri-notification-3-line text-gray-600"></i>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a href="#" class="hidden md:inline text-sm font-medium text-primary hover:underline">Login</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-col md:flex-row items-center justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Trending Topics</h1>
+                <p class="text-gray-500 mt-1">Discover what's trending across social platforms</p>
+            </div>
+            <div class="w-full md:w-1/3 mt-4 md:mt-0">
+                <div class="relative">
+                    <input type="search" placeholder="Search trending topics..." class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+                    <div class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center">
+                        <i class="ri-search-line text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded shadow-sm mb-6">
+            <div class="flex flex-wrap gap-2">
+                <button class="px-4 py-2 bg-primary text-white rounded-full text-sm font-medium !rounded-button whitespace-nowrap">All Topics</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 !rounded-button whitespace-nowrap">Dance</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 !rounded-button whitespace-nowrap">Gaming</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 !rounded-button whitespace-nowrap">Education</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 !rounded-button whitespace-nowrap">Challenge</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 !rounded-button whitespace-nowrap">Comedy</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 !rounded-button whitespace-nowrap">Music</button>
+            </div>
+            <div class="flex justify-between mt-4 border-t pt-4">
+                <div class="flex space-x-4">
+                    <div class="flex items-center">
+                        <input type="radio" name="sort" id="trending" class="custom-radio" checked>
+                        <label for="trending" class="ml-2 text-sm text-gray-700">Trending</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" name="sort" id="latest" class="custom-radio">
+                        <label for="latest" class="ml-2 text-sm text-gray-700">Latest</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" name="sort" id="discussed" class="custom-radio">
+                        <label for="discussed" class="ml-2 text-sm text-gray-700">Most Discussed</label>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-500 mr-2">View:</span>
+                    <button class="w-8 h-8 flex items-center justify-center bg-primary text-white rounded !rounded-button whitespace-nowrap">
+                        <i class="ri-layout-grid-line"></i>
+                    </button>
+                    <button class="w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded ml-2 !rounded-button whitespace-nowrap">
+                        <i class="ri-list-check"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6" id="topicCards">
+            <!-- Topic Card 1 -->
+            <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <img src="https://readdy.ai/api/search-image?query=people%20dancing%20in%20a%20modern%20dance%20studio%20with%20colorful%20lighting%2C%20energetic%20movements%2C%20trending%20dance%20styles%2C%20social%20media%20dance%20challenge%2C%20high%20energy%20atmosphere%2C%20professional%20photography&width=400&height=200&seq=1&orientation=landscape" alt="Dance Challenges" class="card-image">
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-gray-900">Dance Challenges</h3>
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+78% Positive</span>
+                    </div>
+                    <div class="mb-3 h-12">
+                        <div id="chart1" class="w-full h-full"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#DanceChallenge</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Choreography</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Viral</span>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                <i class="ri-eye-line"></i>
+                            </div>
+                            <span>2.4M views</span>
+                        </div>
+                        <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic Card 2 -->
+            <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <img src="https://readdy.ai/api/search-image?query=gaming%20setup%20with%20multiple%20screens%2C%20esports%20tournament%2C%20professional%20gamers%20competing%2C%20gaming%20peripherals%2C%20dramatic%20lighting%2C%20high-tech%20environment%2C%20competitive%20gaming%20atmosphere&width=400&height=200&seq=2&orientation=landscape" alt="Gaming Tournaments" class="card-image">
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-gray-900">Gaming Tournaments</h3>
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+65% Positive</span>
+                    </div>
+                    <div class="mb-3 h-12">
+                        <div id="chart2" class="w-full h-full"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Esports</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Gaming</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Competition</span>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                <i class="ri-eye-line"></i>
+                            </div>
+                            <span>1.8M views</span>
+                        </div>
+                        <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic Card 3 -->
+            <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <img src="https://readdy.ai/api/search-image?query=modern%20classroom%20with%20students%20engaged%20in%20interactive%20learning%2C%20educational%20technology%2C%20digital%20learning%20tools%2C%20diverse%20students%20collaborating%2C%20bright%20and%20modern%20educational%20environment&width=400&height=200&seq=3&orientation=landscape" alt="Educational Content" class="card-image">
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-gray-900">Educational Content</h3>
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+82% Positive</span>
+                    </div>
+                    <div class="mb-3 h-12">
+                        <div id="chart3" class="w-full h-full"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Learning</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Education</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#StudyTips</span>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                <i class="ri-eye-line"></i>
+                            </div>
+                            <span>1.2M views</span>
+                        </div>
+                        <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic Card 4 -->
+            <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <img src="https://readdy.ai/api/search-image?query=people%20participating%20in%20a%20viral%20challenge%2C%20social%20media%20challenge%2C%20diverse%20group%20of%20people%2C%20exciting%20atmosphere%2C%20trending%20internet%20challenge%2C%20people%20having%20fun%2C%20social%20media%20content%20creation&width=400&height=200&seq=4&orientation=landscape" alt="Viral Challenges" class="card-image">
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-gray-900">Viral Challenges</h3>
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">+52% Positive</span>
+                    </div>
+                    <div class="mb-3 h-12">
+                        <div id="chart4" class="w-full h-full"></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Challenge</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Trending</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Viral</span>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <div class="flex items-center text-xs text-gray-500">
+                            <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                <i class="ri-eye-line"></i>
+                            </div>
+                            <span>3.1M views</span>
+                        </div>
+                        <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-between items-center">
+            <button id="prevButton" class="px-4 py-2 border border-gray-200 rounded text-gray-400 flex items-center !rounded-button whitespace-nowrap cursor-not-allowed bg-gray-50" disabled>
+                <i class="ri-arrow-left-s-line mr-1"></i>
+                Previous
+            </button>
+            <button id="nextButton" class="px-4 py-2 border border-gray-200 rounded text-gray-600 flex items-center !rounded-button whitespace-nowrap">
+                Next
+                <i class="ri-arrow-right-s-line ml-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+            const topicCards = document.getElementById('topicCards');
+            let currentPage = 1;
+
+            function showToast(message) {
+                const existingToast = document.querySelector('.toast');
+                if (existingToast) existingToast.remove();
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.classList.add('show'), 100);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            function updateButtons() {
+                prevButton.disabled = currentPage === 1;
+                nextButton.disabled = currentPage === 2;
+                prevButton.classList.toggle('cursor-not-allowed', currentPage === 1);
+                prevButton.classList.toggle('text-gray-400', currentPage === 1);
+                prevButton.classList.toggle('text-gray-600', currentPage !== 1);
+                nextButton.classList.toggle('cursor-not-allowed', currentPage === 2);
+                nextButton.classList.toggle('text-gray-400', currentPage === 2);
+                nextButton.classList.toggle('text-gray-600', currentPage !== 2);
+            }
+
+            function generatePage1Content() {
+                return `
+                    <!-- Topic Card 1 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=people%20dancing%20in%20a%20modern%20dance%20studio%20with%20colorful%20lighting%2C%20energetic%20movements%2C%20trending%20dance%20styles%2C%20social%20media%20dance%20challenge%2C%20high%20energy%20atmosphere%2C%20professional%20photography&width=400&height=200&seq=1&orientation=landscape" alt="Dance Challenges" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Dance Challenges</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+78% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart1" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#DanceChallenge</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Choreography</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Viral</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>2.4M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Topic Card 2 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=gaming%20setup%20with%20multiple%20screens%2C%20esports%20tournament%2C%20professional%20gamers%20competing%2C%20gaming%20peripherals%2C%20dramatic%20lighting%2C%20high-tech%20environment%2C%20competitive%20gaming%20atmosphere&width=400&height=200&seq=2&orientation=landscape" alt="Gaming Tournaments" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Gaming Tournaments</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+65% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart2" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Esports</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Gaming</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Competition</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>1.8M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Topic Card 3 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=modern%20classroom%20with%20students%20engaged%20in%20interactive%20learning%2C%20educational%20technology%2C%20digital%20learning%20tools%2C%20diverse%20students%20collaborating%2C%20bright%20and%20modern%20educational%20environment&width=400&height=200&seq=3&orientation=landscape" alt="Educational Content" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Educational Content</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+82% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart3" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Learning</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Education</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#StudyTips</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>1.2M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Topic Card 4 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=people%20participating%20in%20a%20viral%20challenge%2C%20social%20media%20challenge%2C%20diverse%20group%20of%20people%2C%20exciting%20atmosphere%2C%20trending%20internet%20challenge%2C%20people%20having%20fun%2C%20social%20media%20content%20creation&width=400&height=200&seq=4&orientation=landscape" alt="Viral Challenges" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Viral Challenges</h3>
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">+52% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart4" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Challenge</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Trending</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Viral</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>3.1M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function generatePage2Content() {
+                return `
+                    <!-- Topic Card 5 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=comedy%20performance%20on%20stage%2C%20stand-up%20comedy%2C%20audience%20laughing%2C%20comedy%20club%20atmosphere%2C%20professional%20lighting%2C%20microphone%20stand%2C%20comedic%20performance%2C%20entertainment%20venue&width=400&height=200&seq=5&orientation=landscape" alt="Comedy Trends" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Comedy Trends</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+75% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart5" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Comedy</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Humor</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Standup</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>1.9M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Topic Card 6 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=music%20production%20studio%20with%20professional%20equipment%2C%20recording%20session%2C%20musical%20instruments%2C%20mixing%20console%2C%20headphones%2C%20microphones%2C%20professional%20audio%20production%20environment&width=400&height=200&seq=6&orientation=landscape" alt="Music Production" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Music Production</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+68% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart6" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Music</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Production</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Studio</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>1.5M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Topic Card 7 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=fitness%20workout%20session%2C%20people%20exercising%20in%20modern%20gym%2C%20fitness%20equipment%2C%20athletic%20training%2C%20health%20and%20wellness%2C%20active%20lifestyle%2C%20professional%20fitness%20photography&width=400&height=200&seq=7&orientation=landscape" alt="Fitness & Wellness" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Fitness & Wellness</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+79% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart7" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Fitness</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Wellness</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Workout</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>2.2M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Topic Card 8 -->
+                    <div class="bg-white rounded shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <img src="https://readdy.ai/api/search-image?query=travel%20photography%20of%20exotic%20destinations%2C%20scenic%20landscapes%2C%20adventure%20tourism%2C%20beautiful%20sunset%20views%2C%20professional%20travel%20photography%2C%20wanderlust%20inspiration&width=400&height=200&seq=8&orientation=landscape" alt="Travel & Adventure" class="card-image">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-gray-900">Travel & Adventure</h3>
+                                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">+73% Positive</span>
+                            </div>
+                            <div class="mb-3 h-12">
+                                <div id="chart8" class="w-full h-full"></div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Travel</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Adventure</span>
+                                <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">#Explore</span>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                        <i class="ri-eye-line"></i>
+                                    </div>
+                                    <span>2.1M views</span>
+                                </div>
+                                <button class="text-primary text-sm font-medium !rounded-button whitespace-nowrap">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function navigateToPage(page) {
+                currentPage = page;
+                topicCards.style.opacity = '0';
+                topicCards.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => {
+                    topicCards.innerHTML = currentPage === 1 ? generatePage1Content() : generatePage2Content();
+                    initializeCharts();
+                    topicCards.style.opacity = '1';
+                    updateButtons();
+                }, 300);
+            }
+
+            prevButton.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    navigateToPage(currentPage - 1);
+                    showToast(`Navigated to Page ${currentPage - 1}`);
+                }
+            });
+
+            nextButton.addEventListener('click', function() {
+                if (currentPage < 2) {
+                    navigateToPage(currentPage + 1);
+                    showToast(`Navigated to Page ${currentPage + 1}`);
+                }
+            });
+
+            function initializeCharts() {
+                const charts = {
+                    chart1: { data: [30, 40, 35, 50, 55, 65, 70], max: 100 },
+                    chart2: { data: [25, 35, 45, 40, 50, 45, 60], max: 100 },
+                    chart3: { data: [40, 45, 50, 60, 55, 65, 75], max: 100 },
+                    chart4: { data: [60, 55, 50, 45, 50, 55, 50], max: 100 },
+                    chart5: { data: [35, 45, 50, 55, 60, 65, 70], max: 100 },
+                    chart6: { data: [30, 40, 45, 50, 55, 60, 65], max: 100 },
+                    chart7: { data: [40, 45, 55, 60, 65, 70, 75], max: 100 },
+                    chart8: { data: [45, 50, 55, 60, 65, 70, 75], max: 100 }
+                };
+
+                Object.keys(charts).forEach(id => {
+                    const chartElement = document.getElementById(id);
+                    if (chartElement) {
+                        const chart = echarts.init(chartElement);
+                        const option = {
+                            tooltip: {
+                                trigger: 'axis',
+                                formatter: function(params) {
+                                    const dataIndex = params[0].dataIndex;
+                                    const value = charts[id].data[dataIndex];
+                                    const percentage = ((value / charts[id].max) * 100).toFixed(1) + '%';
+                                    return `${percentage}`;
+                                }
+                            },
+                            animation: false,
+                            grid: { top: 0, right: 0, bottom: 0, left: 0 },
+                            xAxis: { type: 'category', data: ['', '', '', '', '', '', ''], show: false },
+                            yAxis: { type: 'value', show: false },
+                            series: [{
+                                data: charts[id].data,
+                                type: 'line',
+                                smooth: true,
+                                symbol: 'none',
+                                lineStyle: { color: id === 'chart4' ? 'rgba(251, 191, 114, 1)' : 'rgba(87, 181, 231, 1)' },
+                                areaStyle: {
+                                    color: {
+                                        type: 'linear',
+                                        x: 0, y: 0, x2: 0, y2: 1,
+                                        colorStops: [{
+                                            offset: 0,
+                                            color: id === 'chart4' ? 'rgba(251, 191, 114, 0.2)' : 'rgba(87, 181, 231, 0.2)'
+                                        }, {
+                                            offset: 1,
+                                            color: id === 'chart4' ? 'rgba(251, 191, 114, 0.05)' : 'rgba(87, 181, 231, 0.05)'
+                                        }]
+                                    }
+                                }
+                            }]
+                        };
+                        chart.setOption(option);
+                    }
+                });
+
+                window.addEventListener('resize', function() {
+                    Object.keys(charts).forEach(id => {
+                        const chartElement = document.getElementById(id);
+                        if (chartElement) {
+                            const chart = echarts.getInstanceByDom(chartElement);
+                            if (chart) chart.resize();
+                        }
+                    });
+                });
+            }
+
+            navigateToPage(1);
+        });
+    </script>
+</body>
+</html>
